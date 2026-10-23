@@ -1,0 +1,25 @@
+
+{% extends "frontend/base.html" %}
+
+{% block title %}Home | ResolveX{% endblock %}
+
+{% block content %}
+
+<div class="p-5 mb-4 bg-white rounded-4 shadow-sm">
+    <h1 class="display-5 fw-bold">Welcome to ResolveX</h1>
+
+    <p class="lead mt-3">
+        Your centralized ticket management platform.
+    </p>
+
+    <p>
+        Manage support tickets, track their status,
+        and organize customer requests in one place.
+    </p>
+
+    <a href="/api/tickets/" class="btn btn-primary">
+        Explore Tickets
+    </a>
+</div>
+
+{% endblock %}

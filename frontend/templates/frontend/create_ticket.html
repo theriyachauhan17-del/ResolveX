@@ -1,0 +1,82 @@
+
+{% extends "frontend/base.html" %}
+
+{% block title %}Create Ticket | ResolveX{% endblock %}
+
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8 col-xl-7">
+
+        <div class="mb-4">
+            <h1 class="fw-bold">Create Support Ticket</h1>
+            <p class="text-secondary">
+                Describe your issue and submit a new support request.
+            </p>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-body p-4">
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    {% if form.non_field_errors %}
+                        <div class="alert alert-danger">
+                            {{ form.non_field_errors }}
+                        </div>
+                    {% endif %}
+
+                    <div class="mb-3">
+                        <label for="{{ form.title.id_for_label }}"
+                               class="form-label">
+                            Ticket Title
+                        </label>
+                        {{ form.title }}
+                        {% for error in form.title.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}"
+                               class="form-label">
+                            Description
+                        </label>
+                        {{ form.description }}
+                        {% for error in form.description.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="{{ form.priority.id_for_label }}"
+                               class="form-label">
+                            Priority
+                        </label>
+                        {{ form.priority }}
+                        {% for error in form.priority.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            Submit Ticket
+                        </button>
+
+                        <a href="{% url 'tickets_page' %}"
+                           class="btn btn-outline-secondary">
+                            Cancel
+                        </a>
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
