@@ -1,4 +1,3 @@
-
 from django.urls import path, include
 from . import views
 
@@ -8,5 +7,7 @@ urlpatterns = [
     path("tickets/create/", views.create_ticket, name="create_ticket"),
     path("login/", views.login_page, name="login"),
     path("logout/", views.logout_page, name="logout"),
+    path("tickets/<int:ticket_id>/", views.ticket_detail, name="ticket_detail"),
+    path("tickets/<int:ticket_id>/status/", views.update_ticket_status, name="update_ticket_status"),
 
 ]

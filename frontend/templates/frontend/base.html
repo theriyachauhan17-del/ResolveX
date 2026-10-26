@@ -11,80 +11,264 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
         rel="stylesheet"
     >
+
+    <style>
+        :root {
+            --rx-primary: #635bff;
+            --rx-primary-dark: #4f46e5;
+            --rx-navy: #111827;
+            --rx-background: #f5f7fb;
+            --rx-text: #182230;
+            --rx-muted: #667085;
+            --rx-border: #e7eaf0;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            margin: 0;
+            background: var(--rx-background);
+            color: var(--rx-text);
+            font-family: Inter, -apple-system, BlinkMacSystemFont,
+                         "Segoe UI", sans-serif;
+        }
+
+        .rx-navbar {
+            background: var(--rx-navy);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 14px 0;
+        }
+
+        .rx-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #fff !important;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+        }
+
+        .rx-brand-icon {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 11px;
+            background: var(--rx-primary);
+            color: white;
+            font-size: 1.15rem;
+        }
+
+        .rx-navbar .nav-link {
+            color: #cbd5e1;
+            padding: 9px 14px !important;
+            border-radius: 9px;
+            font-size: 0.94rem;
+            font-weight: 500;
+            transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .rx-navbar .nav-link:hover,
+        .rx-navbar .nav-link:focus {
+            background: rgba(255, 255, 255, 0.09);
+            color: #fff;
+        }
+
+        .rx-navbar .nav-cta {
+            background: var(--rx-primary);
+            color: #fff !important;
+            margin-left: 8px;
+        }
+
+        .rx-navbar .nav-cta:hover {
+            background: var(--rx-primary-dark);
+        }
+
+        .rx-navbar .navbar-toggler {
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        .rx-main {
+            width: 100%;
+            flex: 1;
+            padding-top: 40px;
+            padding-bottom: 48px;
+            animation: rx-enter 0.35s ease-out;
+        }
+
+        .rx-footer {
+            border-top: 1px solid var(--rx-border);
+            background: #fff;
+            color: var(--rx-muted);
+            padding: 22px 0;
+            font-size: 0.88rem;
+        }
+
+        .rx-footer strong {
+            color: var(--rx-text);
+        }
+
+        /* Consistent styling for common Bootstrap components */
+        .card {
+            border: 1px solid var(--rx-border);
+            border-radius: 16px;
+            box-shadow: 0 4px 18px rgba(16, 24, 40, 0.035);
+        }
+
+        .btn-primary {
+            background: var(--rx-primary);
+            border-color: var(--rx-primary);
+            border-radius: 9px;
+            font-weight: 600;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .btn-primary:hover {
+            background: var(--rx-primary-dark);
+            border-color: var(--rx-primary-dark);
+            box-shadow: 0 5px 14px rgba(99, 91, 255, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .form-control,
+        .form-select {
+            min-height: 44px;
+            border-color: #dce1e9;
+            border-radius: 9px;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--rx-primary);
+            box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
+        }
+
+        a {
+            transition: color 0.2s ease;
+        }
+
+        @keyframes rx-enter {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            .rx-navbar .navbar-nav {
+                padding-top: 14px;
+                gap: 5px;
+            }
+
+            .rx-navbar .nav-cta {
+                margin-left: 0;
+                margin-top: 5px;
+                text-align: center;
+            }
+
+            .rx-main {
+                padding-top: 28px;
+                padding-bottom: 32px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+
+    {% block extra_css %}{% endblock %}
 </head>
 
-<body class="bg-light">
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark rx-navbar">
+        <div class="container">
+            <a class="navbar-brand rx-brand" href="{% url 'home' %}">
+                <span class="rx-brand-icon" aria-hidden="true">R</span>
+                ResolveX
+            </a>
 
+            <button
+                class="navbar-toggler"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#mainNavbar"
+                aria-controls="mainNavbar"
+                aria-expanded="false"
+                aria-label="Toggle navigation"
+            >
+                <span class="navbar-toggler-icon"></span>
+            </button>
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-    <div class="container">
-
-        <a class="navbar-brand fw-bold" href="{% url 'home' %}">
-            ResolveX
-        </a>
-
-        <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#mainNavbar"
-            aria-controls="mainNavbar"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-        >
-            <span class="navbar-toggler-icon"></span>
-        </button>
-
-        <div class="collapse navbar-collapse" id="mainNavbar">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'home' %}">
-                        Home
-                    </a>
-                </li>
-
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'tickets_page' %}">
-                        Tickets
-                    </a>
-                </li>
-
-
-                {% if request.user.is_authenticated %}
+            <div class="collapse navbar-collapse" id="mainNavbar">
+                <ul class="navbar-nav ms-auto align-items-lg-center">
                     <li class="nav-item">
-                        <form method="post" action="{% url 'logout' %}">
-                        {% csrf_token %}
-                        <button type="submit" class="nav-link btn btn-link text-white">
-                            Logout
-                        </button>
-                     </form>
-                    </li>
-                {% else %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'login' %}">
-                            Login
+                        <a class="nav-link" href="{% url 'home' %}">
+                            Home
                         </a>
                     </li>
-                {% endif %}
 
-            </ul>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'tickets_page' %}">
+                            Tickets
+                        </a>
+                    </li>
+
+                    {% if request.user.is_authenticated %}
+                        <li class="nav-item">
+                            <form method="post" action="{% url 'logout' %}">
+                                {% csrf_token %}
+                                <button
+                                    type="submit"
+                                    class="nav-link btn btn-link text-white border-0 w-100"
+                                >
+                                    Logout
+                                </button>
+                            </form>
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link nav-cta" href="{% url 'login' %}">
+                                Sign in
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
         </div>
+    </nav>
 
-    </div>
-</nav>
-
-    <main class="container py-5">
-        {% block content %}
-        {% endblock %}
+    <main class="container rx-main">
+        {% block content %}{% endblock %}
     </main>
 
-    <footer class="text-center text-secondary py-3">
-        <small>ResolveX &copy; 2026</small>
+    <footer class="rx-footer mt-auto">
+        <div class="container d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+            <div>
+                <strong>ResolveX</strong>
+                <span class="mx-1">·</span>
+                Ticket management made clearer.
+            </div>
+            <div>
+                &copy; {% now "Y" %} ResolveX. All rights reserved.
+            </div>
+        </div>
     </footer>
 
-
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
-
-
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

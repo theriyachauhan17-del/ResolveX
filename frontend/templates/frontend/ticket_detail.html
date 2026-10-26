@@ -1,0 +1,192 @@
+
+{% extends "frontend/base.html" %}
+
+{% block title %}Ticket #{{ ticket.id }} | ResolveX{% endblock %}
+
+{% block content %}
+
+<!-- Page Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+    <div>
+        <a href="{% url 'tickets_page' %}"
+           class="text-decoration-none text-secondary">
+            &larr; Back to Tickets
+        </a>
+
+        <h1 class="fw-bold mt-3 mb-1">Ticket Details</h1>
+        <p class="text-secondary mb-0">
+            Review the support request and its current status.
+        </p>
+    </div>
+
+    <span class="badge bg-primary fs-6 px-3 py-2">
+        Ticket #{{ ticket.id }}
+    </span>
+</div>
+
+<!-- Ticket Information -->
+<div class="row g-4">
+
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-4 p-md-5">
+
+                <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                    <div>
+                        <p class="text-secondary small mb-2">
+                            TICKET TITLE
+                        </p>
+                        <h2 class="h3 fw-bold mb-0">
+                            {{ ticket.title }}
+                        </h2>
+                    </div>
+
+                    {% if ticket.priority == "CRITICAL" %}
+                        <span class="badge text-bg-danger">
+                            {{ ticket.get_priority_display }} Priority
+                        </span>
+                    {% elif ticket.priority == "HIGH" %}
+                        <span class="badge text-bg-warning">
+                            {{ ticket.get_priority_display }} Priority
+                        </span>
+                    {% elif ticket.priority == "MEDIUM" %}
+                        <span class="badge text-bg-info">
+                            {{ ticket.get_priority_display }} Priority
+                        </span>
+                    {% else %}
+                        <span class="badge text-bg-secondary">
+                            {{ ticket.get_priority_display }} Priority
+                        </span>
+                    {% endif %}
+                </div>
+
+                <hr class="my-4">
+
+                <h3 class="h6 fw-bold mb-3">Description</h3>
+
+                <div class="text-secondary"
+                     style="white-space: pre-wrap; overflow-wrap: anywhere;">{{ ticket.description }}</div>
+
+                <hr class="my-4">
+
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{% url 'tickets_page' %}"
+                       class="btn btn-outline-secondary">
+                        Back to Tickets
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Ticket Metadata -->
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <h3 class="h5 fw-bold mb-4">Ticket Information</h3>
+
+                
+    <div class="mb-4">
+        <p class="text-secondary small mb-2">Current Status</p>
+
+        {% if ticket.status == "OPEN" %}
+            <span class="badge text-bg-primary">
+                {{ ticket.get_status_display }}
+            </span>
+        {% elif ticket.status == "IN_PROGRESS" %}
+            <span class="badge text-bg-warning">
+                {{ ticket.get_status_display }}
+            </span>
+        {% elif ticket.status == "RESOLVED" %}
+            <span class="badge text-bg-success">
+                {{ ticket.get_status_display }}
+            </span>
+        {% else %}
+            <span class="badge text-bg-secondary">
+                {{ ticket.get_status_display }}
+            </span>
+        
+        {% endif %}
+    </div>
+
+{% if status_error %}
+    <div class="alert alert-danger">{{ status_error }}</div>
+{% endif %}
+
+{% if request.user.is_superuser or request.user.role == "ADMIN" or request.user.role == "MANAGER" or request.user.role == "AGENT" and ticket.assigned_to_id == request.user.id %}
+    <hr class="my-4">
+
+    <h3 class="h6 fw-bold mb-3">Update Ticket Status</h3>
+
+    <form method="post"
+          action="{% url 'update_ticket_status' ticket.id %}">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            <label for="ticket-status" class="form-label">
+                Select New Status
+            </label>
+
+            <select id="ticket-status" name="status" class="form-select" required>
+                {% for value, label in ticket.Status.choices %}
+                    <option value="{{ value }}"
+                        {% if ticket.status == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Save Status
+        </button>
+    </form>
+{% endif %}
+
+
+                <div class="mb-4">
+                    <p class="text-secondary small mb-1">Organization</p>
+                    <p class="fw-semibold mb-0">
+                        {{ ticket.organization }}
+                    </p>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-secondary small mb-1">Created By</p>
+                    <p class="fw-semibold mb-0">
+                        {{ ticket.created_by }}
+                    </p>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-secondary small mb-1">Assigned To</p>
+                    <p class="fw-semibold mb-0">
+                        {% if ticket.assigned_to %}
+                            {{ ticket.assigned_to }}
+                        {% else %}
+                            <span class="text-secondary">Unassigned</span>
+                        {% endif %}
+                    </p>
+                </div>
+
+                <div class="mb-4">
+                    <p class="text-secondary small mb-1">Created At</p>
+                    <p class="fw-semibold mb-0">
+                        {{ ticket.created_at|date:"d M Y, h:i A" }}
+                    </p>
+                </div>
+
+                <div>
+                    <p class="text-secondary small mb-1">Last Updated</p>
+                    <p class="fw-semibold mb-0">
+                        {{ ticket.updated_at|date:"d M Y, h:i A" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+{% endblock %}

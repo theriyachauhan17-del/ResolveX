@@ -22,6 +22,72 @@
     </span>
 </div>
 
+<!-- Search and Filter Section -->
+<div class="card border-0 shadow-sm rounded-4 mb-4">
+    <div class="card-body p-4">
+        <form method="get">
+            <div class="row g-3 align-items-end">
+
+                <div class="col-md-4">
+                    <label for="ticket-search" class="form-label fw-semibold">
+                        Search by Title
+                    </label>
+                    <input
+                        type="search"
+                        id="ticket-search"
+                        name="q"
+                        class="form-control"
+                        placeholder="Enter ticket title..."
+                        value="{{ search_query }}"
+                    >
+                </div>
+
+                <div class="col-md-3">
+                    <label for="ticket-status" class="form-label fw-semibold">
+                        Filter by Status
+                    </label>
+                    <select id="ticket-status" name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        {% for value, label in status_choices %}
+                            <option value="{{ value }}"
+                                {% if selected_status == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="ticket-priority" class="form-label fw-semibold">
+                        Filter by Priority
+                    </label>
+                    <select id="ticket-priority" name="priority" class="form-select">
+                        <option value="">All Priorities</option>
+                        {% for value, label in priority_choices %}
+                            <option value="{{ value }}"
+                                {% if selected_priority == value %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        Apply
+                    </button>
+                    <a href="{% url 'tickets_page' %}"
+                       class="btn btn-outline-secondary">
+                        Reset
+                    </a>
+                </div>
+
+            </div>
+        </form>
+    </div>
+</div>
+
+
 <div class="card border-0 shadow-sm">
     <div class="card-body">
         <div class="table-responsive">
@@ -41,7 +107,12 @@
                     {% for ticket in tickets %}
                     <tr>
                         <td>#{{ ticket.id }}</td>
-                        <td>{{ ticket.title }}</td>
+                        <td>
+                            <a href="{% url 'ticket_detail' ticket.id %}"
+                                class="text-decoration-none text-dark fw-semibold">
+                                {{ ticket.title }}
+                            </a>
+                        </td>
                         <td>{{ ticket.organization }}</td>
 
                         <td>

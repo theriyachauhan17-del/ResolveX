@@ -1,25 +1,139 @@
 
 {% extends "frontend/base.html" %}
 
-{% block title %}Home | ResolveX{% endblock %}
+{% block title %}Dashboard | ResolveX{% endblock %}
 
 {% block content %}
 
-<div class="p-5 mb-4 bg-white rounded-4 shadow-sm">
-    <h1 class="display-5 fw-bold">Welcome to ResolveX</h1>
+<!-- Welcome Section -->
+<div class="p-4 p-md-5 mb-4 rounded-4 shadow-sm text-white"
+     style="background: linear-gradient(135deg, #312e81, #6d28d9);">
 
-    <p class="lead mt-3">
-        Your centralized ticket management platform.
+    <div class="row align-items-center g-4">
+        <div class="col-lg-8">
+            <span class="badge bg-light text-dark mb-3">
+                SUPPORT MANAGEMENT
+            </span>
+
+            <h1 class="display-5 fw-bold">
+                Welcome to ResolveX
+            </h1>
+
+            <p class="lead mt-3 mb-4">
+                Manage support requests, track ticket progress,
+                and keep your team organized in one place.
+            </p>
+
+            <a href="{% url 'tickets_page' %}"
+               class="btn btn-light btn-lg fw-semibold">
+                View Tickets &rarr;
+            </a>
+        </div>
+
+        <div class="col-lg-4 text-lg-end">
+            <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-white bg-opacity-10"
+                 style="width: 140px; height: 140px;">
+                <span class="fs-1 fw-bold">RX</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Dashboard Overview -->
+<div class="mb-4">
+    <h2 class="h4 fw-bold mb-1">Dashboard Overview</h2>
+    <p class="text-secondary mb-0">
+        Your workspace for managing support activities.
     </p>
+</div>
 
-    <p>
-        Manage support tickets, track their status,
-        and organize customer requests in one place.
-    </p>
+<div class="row g-4 mb-4">
 
-    <a href="/api/tickets/" class="btn btn-primary">
-        Explore Tickets
-    </a>
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary fw-semibold">Ticket Management</span>
+                    <span class="badge text-bg-primary">Tickets</span>
+                </div>
+
+                <h3 class="h5 fw-bold">Manage Your Tickets</h3>
+
+                <p class="text-secondary">
+                    View your existing tickets and follow their progress.
+                </p>
+
+                <a href="{% url 'tickets_page' %}"
+                   class="btn btn-outline-primary">
+                    Open Tickets
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary fw-semibold">Create Request</span>
+                    <span class="badge text-bg-success">New</span>
+                </div>
+
+                <h3 class="h5 fw-bold">Raise a Support Ticket</h3>
+
+                <p class="text-secondary">
+                    Submit a support request to report an issue or ask for help.
+                </p>
+
+                <a href="{% url 'create_ticket' %}"
+                   class="btn btn-outline-success">
+                    Create Ticket
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6 col-xl-4">
+        <div class="card border-0 shadow-sm rounded-4 h-100">
+            <div class="card-body p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <span class="text-secondary fw-semibold">Account</span>
+                    <span class="badge text-bg-secondary">Profile</span>
+                </div>
+
+                <h3 class="h5 fw-bold">Your Workspace</h3>
+
+                <p class="text-secondary">
+                    Sign in to access the features available to your account.
+                </p>
+
+                {% if request.user.is_authenticated %}
+                    <span class="text-success fw-semibold">
+                        Signed in as {{ request.user.username }}
+                    </span>
+                {% else %}
+                    <a href="{% url 'login' %}"
+                       class="btn btn-outline-dark">
+                        Sign In
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Information Section -->
+<div class="card border-0 shadow-sm rounded-4">
+    <div class="card-body p-4">
+        <h2 class="h5 fw-bold">Why ResolveX?</h2>
+
+        <p class="text-secondary mb-0">
+            ResolveX brings support requests into one workspace,
+            helping teams organize tickets and monitor their progress.
+            Use the ticket section to get started.
+        </p>
+    </div>
 </div>
 
 {% endblock %}

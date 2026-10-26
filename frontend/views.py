@@ -1,5 +1,5 @@
-
-from django.shortcuts import render, redirect
+from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 
@@ -26,6 +26,7 @@ def tickets_page(request):
             },
         )
 
+    
     tickets = Ticket.objects.filter(
         organization_id=request.user.organization_id
     ).select_related(
@@ -34,11 +35,130 @@ def tickets_page(request):
         "assigned_to",
     )
 
+    # Search tickets by title.
+    search_query = request.GET.get("q", "").strip()
+    if search_query:
+        tickets = tickets.filter(title__icontains=search_query)
+
+    # Filter tickets by status.
+    selected_status = request.GET.get("status", "").strip()
+    if selected_status:
+        tickets = tickets.filter(status=selected_status)
+
+    # Filter tickets by priority.
+    selected_priority = request.GET.get("priority", "").strip()
+    if selected_priority:
+        tickets = tickets.filter(priority=selected_priority)
+
+    context = {
+        "tickets": tickets,
+        "search_query": search_query,
+        "selected_status": selected_status,
+        "selected_priority": selected_priority,
+        "status_choices": Ticket._meta.get_field("status").choices,
+        "priority_choices": Ticket._meta.get_field("priority").choices,
+    }
+
+    return render(request, "frontend/tickets.html", context)
+
+
+@login_required
+def ticket_detail(request, ticket_id):
+    if not request.user.organization_id:
+        return render(
+            request,
+            "frontend/tickets.html",
+            {
+                "tickets": Ticket.objects.none(),
+                "organization_error": (
+                    "Your account is not assigned to an organization."
+                ),
+            },
+            status=403,
+        )
+
+    ticket = get_object_or_404(
+        Ticket.objects.select_related(
+            "organization",
+            "created_by",
+            "assigned_to",
+        ),
+        pk=ticket_id,
+        organization_id=request.user.organization_id,
+    )
+
     return render(
         request,
-        "frontend/tickets.html",
-        {"tickets": tickets},
+        "frontend/ticket_detail.html",
+        {
+            "ticket": ticket,
+            "status_choices": Ticket.Status.choices,
+        },
     )
+
+
+@login_required
+def update_ticket_status(request, ticket_id):
+    if request.method != "POST":
+        return redirect("ticket_detail", ticket_id=ticket_id)
+
+    user = request.user
+
+    # Find the ticket only within the user's organization.
+    if user.is_superuser:
+        ticket = get_object_or_404(Ticket, pk=ticket_id)
+    else:
+        if not user.organization_id:
+            return render(
+                request,
+                "frontend/tickets.html",
+                {
+                    "tickets": Ticket.objects.none(),
+                    "organization_error": (
+                        "Your account is not assigned to an organization."
+                    ),
+                },
+                status=403,
+            )
+
+        ticket = get_object_or_404(
+            Ticket,
+            pk=ticket_id,
+            organization_id=user.organization_id,
+        )
+
+    # Enforce role-based update permissions.
+    allowed = (
+        user.is_superuser
+        or user.role in ["ADMIN", "MANAGER"]
+        or (
+            user.role == "AGENT"
+            and ticket.assigned_to_id == user.id
+        )
+    )
+
+    if not allowed:
+        return render(
+            request,
+            "frontend/ticket_detail.html",
+            {"ticket": ticket, "status_error": (
+                "You do not have permission to update this ticket."
+            )},
+            status=403,
+        )
+
+    new_status = request.POST.get("status", "").strip()
+    valid_statuses = dict(Ticket.Status.choices)
+
+    if new_status not in valid_statuses:
+        messages.error(request, "Please select a valid ticket status.")
+        return redirect("ticket_detail", ticket_id=ticket.id)
+
+    ticket.status = new_status
+    ticket.save(update_fields=["status", "updated_at"])
+
+    messages.success(request, "Ticket status updated successfully.")
+    return redirect("ticket_detail", ticket_id=ticket.id)
 
 
 @login_required
