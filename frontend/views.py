@@ -264,7 +264,7 @@ def temporary_manager_password_reset(request):
     try:
         manager = User.objects.get(
             username="xyz_manager",
-            role="MANAGER",
+            
         )
     except User.DoesNotExist:
         return JsonResponse(
