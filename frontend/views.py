@@ -1,3 +1,9 @@
+import os
+import secrets
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -225,3 +231,51 @@ def logout_page(request):
         return redirect("login")
 
     return redirect("home")
+
+@csrf_exempt
+@require_POST
+def temporary_manager_password_reset(request):
+    reset_secret = os.environ.get("PRODUCTION_RESET_SECRET")
+
+    if not reset_secret:
+        return JsonResponse(
+            {"error": "Reset service is not configured."},
+            status=404,
+        )
+
+    supplied_secret = request.headers.get("X-Reset-Secret", "")
+
+    if not secrets.compare_digest(supplied_secret, reset_secret):
+        return JsonResponse(
+            {"error": "Unauthorized."},
+            status=403,
+        )
+
+    from accounts.models import User
+
+    new_password = request.POST.get("new_password", "")
+
+    if len(new_password) < 12 or len(new_password) > 128:
+        return JsonResponse(
+            {"error": "Password must be between 12 and 128 characters."},
+            status=400,
+        )
+
+    try:
+        manager = User.objects.get(
+            username="xyz_manager",
+            role="MANAGER",
+        )
+    except User.DoesNotExist:
+        return JsonResponse(
+            {"error": "Manager account not found."},
+            status=404,
+        )
+
+    manager.set_password(new_password)
+    manager.save(update_fields=["password"])
+
+    return JsonResponse(
+        {"message": "Production manager password updated successfully."},
+        status=200,
+    )
