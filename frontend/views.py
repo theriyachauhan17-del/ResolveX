@@ -267,10 +267,14 @@ def temporary_manager_password_reset(request):
             
         )
     except User.DoesNotExist:
-        return JsonResponse(
-            {"error": "Manager account not found."},
-            status=404,
+        accounts = list(
+            User.objects.values("id", "username", "role")
         )
+        return JsonResponse(
+            {"error": "Manager account not found.", "accounts": accounts},
+            status=404,
+        
+    )
 
     manager.set_password(new_password)
     manager.save(update_fields=["password"])
