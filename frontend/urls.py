@@ -1,6 +1,10 @@
 from django.urls import path, include
 from . import views
 
+
+from django.urls import path
+from . import views
+
 urlpatterns = [
     path("", views.home, name="home"),
     path("login/", views.login_page, name="login"),
@@ -13,9 +17,5 @@ urlpatterns = [
         views.update_ticket_status,
         name="update_ticket_status",
     ),
-    path(
-        "temporary-database-diagnostic/",
-        views.temporary_database_diagnostic,
-        name="temporary_database_diagnostic",
-    ),
 ]
+

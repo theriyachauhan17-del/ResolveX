@@ -1,8 +1,3 @@
-import os
-import secrets
-
-from django.http import JsonResponse
-from django.db import connection
 from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
@@ -10,8 +5,6 @@ from django.contrib.auth.decorators import login_required
 
 from tickets.models import Ticket
 from .forms import TicketForm
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
 
 def home(request):
     return render(request, "frontend/home.html")
@@ -232,36 +225,3 @@ def logout_page(request):
 
     return redirect("home")
 
-@csrf_exempt
-@require_POST
-def temporary_database_diagnostic(request):
-    reset_secret = os.environ.get("PRODUCTION_RESET_SECRET")
-    supplied_secret = request.headers.get("X-Reset-Secret", "")
-
-    if not reset_secret or not secrets.compare_digest(
-        supplied_secret, reset_secret
-    ):
-        return JsonResponse({"error": "Unauthorized."}, status=403)
-
-    from accounts.models import User
-
-    try:
-        connection.ensure_connection()
-
-        manager_exists = User.objects.filter(
-            username="xyz_manager",
-            role="MANAGER",
-        ).exists()
-
-        return JsonResponse({
-            "database_status": "connected",
-            "database_vendor": connection.vendor,
-            "user_count": User.objects.count(),
-            "manager_exists": manager_exists,
-        })
-
-    except Exception:
-        return JsonResponse(
-            {"error": "Database diagnostic failed."},
-            status=500,
-        )
