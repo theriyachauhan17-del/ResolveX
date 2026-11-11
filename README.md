@@ -1,4 +1,4 @@
-# ResolveX — Multi-Tenant Ticket Management System
+﻿# ResolveX — Multi-Tenant Ticket Management System
 
 ResolveX is a multi-tenant support ticket management system built using Django and Django REST Framework. It enables multiple organizations to manage support tickets securely with organization-level data isolation, role-based access control, and JWT authentication.
 
@@ -22,10 +22,11 @@ The project includes RESTful APIs, a web-based interface, PostgreSQL database in
 - Ticket priority and status management.
 - JWT authentication with access and refresh tokens.
 - PostgreSQL database integration.
-- Search and filtering functionality.
+- Frontend ticket search by title.
+- Frontend ticket filtering by status and priority.
 - Django admin integration.
 - Automated test coverage.
-- API schema and documentation support through DRF Spectacular.
+- DRF Spectacular installed and configured for API schema generation.
 
 ## Technology Stack
 
@@ -36,8 +37,8 @@ The project includes RESTful APIs, a web-based interface, PostgreSQL database in
 | API | Django REST Framework |
 | Database | PostgreSQL |
 | Authentication | Simple JWT |
-| Filtering | django-filter |
-| API Documentation | DRF Spectacular |
+| Filtering | Frontend search and filtering |
+| API Schema | DRF Spectacular |
 | Frontend | Django Templates, HTML, CSS, Bootstrap |
 | Deployment | Render |
 | Version Control | Git and GitHub |
@@ -132,15 +133,20 @@ Execute the Django test suite:
 python manage.py test
 ```
 
-**Latest verified test result:** 27 tests passed successfully.
+**Latest verified test result:** 29 tests passed successfully.
 
 ## Security and Access Control
 
-- Organization-level data isolation.
-- Role-based ticket access and management.
+- Organization-level ticket data isolation.
+- Role-based access control for administrators, managers, support agents, and customers.
+- Customers can view and create tickets but cannot update or delete them through the API.
+- Managers can create and update tickets within their organization.
+- Support agents can update tickets assigned to them.
+- Organization administrators can manage tickets within their organization.
+- Superusers have cross-organization access.
 - JWT-based API authentication.
 - Environment-based configuration for sensitive credentials.
-- Production deployment using HTTPS.
+- HTTPS-enabled production deployment.
 - Database credentials and secret keys must remain private.
 
 ## Deployment
@@ -159,7 +165,7 @@ The production environment uses PostgreSQL and has successfully passed deploymen
 
 **Database:** PostgreSQL
 
-**Automated tests:** 27 passed in the latest verified test run
+**Automated tests:** 29 passed in the latest verified test run
 
 **Production migration:** Verified
 
