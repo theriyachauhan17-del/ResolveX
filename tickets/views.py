@@ -1,4 +1,5 @@
-
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.exceptions import PermissionDenied
@@ -12,6 +13,18 @@ class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.none()
     serializer_class = TicketSerializer
     permission_classes = [IsAuthenticated, TicketRolePermission]
+
+    # Filtering, searching, and ordering
+    filter_backends = [
+    DjangoFilterBackend,
+    SearchFilter,
+    OrderingFilter,
+    ]
+
+    filterset_fields = ["status", "priority"]
+    search_fields = ["title", "description"]
+    ordering_fields = ["created_at", "updated_at", "priority", "status"]
+    ordering = ["-created_at"]
 
     def get_queryset(self):
         user = self.request.user
