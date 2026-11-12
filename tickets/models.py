@@ -61,3 +61,9 @@ class Ticket(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["organization", "status"],
+                name="ticket_org_status_idx",
+            ),
+        ]

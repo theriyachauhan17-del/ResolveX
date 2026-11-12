@@ -118,7 +118,7 @@ class TicketCreationTest(APITestCase):
         response = self.client.get("/api/tickets/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data["results"], [])
 
     def test_superuser_can_access_ticket_list(self):
         admin_user = User.objects.create_superuser(
@@ -132,7 +132,7 @@ class TicketCreationTest(APITestCase):
         response = self.client.get("/api/tickets/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data["results"], [])
 
 
     def test_user_cannot_create_ticket_for_other_organization(self):
@@ -174,10 +174,9 @@ class TicketCreationTest(APITestCase):
 
         response = self.client.get("/api/tickets/")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
+        self.assertEqual(len(response.data["results"]), 1)
         self.assertEqual(
-            response.data[0]["title"],
+            response.data["results"][0]["title"],
             "My organization's ticket",
         )
 
@@ -200,7 +199,7 @@ class TicketCreationTest(APITestCase):
         response = self.client.get("/api/tickets/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
+        self.assertEqual(response.data["results"], [])
 
     def test_superuser_can_create_ticket_for_other_organization(self):
         admin_user = User.objects.create_superuser(
