@@ -1,4 +1,4 @@
-﻿
+
 # ResolveX — Incident & SLA Management System
 
 ResolveX is a multi-tenant Incident and Support Ticket Management System built using Python, Django, Django REST Framework, and PostgreSQL.
@@ -239,8 +239,8 @@ python manage.py test
 
 **Latest verified result:**
 
-- 37 tests discovered.
-- 37 tests passed.
+- 49 tests discovered.
+- 49 tests passed.
 - Django system checks passed.
 - No test failures.
 
@@ -281,7 +281,7 @@ The production environment uses PostgreSQL.
 | SLA Management | Implemented |
 | Frontend Interface | Implemented |
 | API Documentation | Configured |
-| Automated Tests | 37 Passed |
+| Automated Tests | 49 Passed |
 | Deployment | Live |
 
 ---
