@@ -42,3 +42,25 @@ class SLAPolicyViewSet(viewsets.ModelViewSet):
                 )
 
         serializer.save()
+
+    
+    def perform_update(self, serializer):
+        user = self.request.user
+
+        organization = serializer.validated_data.get(
+            "organization",
+            serializer.instance.organization,
+        )
+
+        if not user.is_superuser:
+            if not user.organization_id:
+                raise PermissionDenied(
+                    "You must belong to an organization to update an SLA policy."
+                )
+
+            if organization.id != user.organization_id:
+                raise PermissionDenied(
+                    "You can update SLA policies only for your own organization."
+                )
+
+        serializer.save()
