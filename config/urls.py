@@ -25,6 +25,9 @@ urlpatterns = [
     # Frontend URLs
     path("", include("frontend.urls")),
 
+    # SLA API
+    path("api/sla/", include("sla.urls")),
+
         # API Documentation
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path(
@@ -37,6 +40,7 @@ urlpatterns = [
         SpectacularRedocView.as_view(url_name="schema"),
         name="redoc",
     ),
+
 
 
 ]

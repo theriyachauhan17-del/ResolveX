@@ -1,55 +1,111 @@
-﻿# ResolveX — Multi-Tenant Ticket Management System
+﻿
+# ResolveX — Incident & SLA Management System
 
-ResolveX is a multi-tenant support ticket management system built using Django and Django REST Framework. It enables multiple organizations to manage support tickets securely with organization-level data isolation, role-based access control, and JWT authentication.
+ResolveX is a multi-tenant Incident and Support Ticket Management System built using Python, Django, Django REST Framework, and PostgreSQL.
 
-The project includes RESTful APIs, a web-based interface, PostgreSQL database integration, and automated tests.
+It enables multiple organizations to manage support incidents through secure REST APIs and a web-based interface. The system implements organization-level data isolation, role-based access control, JWT authentication, and configurable Service Level Agreement (SLA) policies.
+
+The application supports ticket lifecycle management, SLA deadline calculation, response tracking, resolution tracking, and API documentation.
 
 **Live Demo:** https://resolvex-web.onrender.com
 
 **GitHub Repository:** https://github.com/theriyachauhan17-del/ResolveX
 
+---
+
 ## Features
 
-- Custom Django user model with organization membership.
-- Role-based access control:
-  - Administrator
-  - Manager
-  - Support Agent
-  - Customer
-- Multi-tenant organization management.
-- Organization-level ticket isolation.
-- Ticket creation, listing, retrieval, updating, and deletion through REST APIs.
-- Ticket priority and status management.
-- JWT authentication with access and refresh tokens.
-- PostgreSQL database integration.
-- Frontend ticket search by title.
-- Frontend ticket filtering by status and priority.
-- Django admin integration.
-- Automated test coverage.
-- DRF Spectacular installed and configured for API schema generation.
+### 1. Authentication and Authorization
+- Custom Django user model.
+- JWT access and refresh token authentication.
+- Role-based access control.
+- Organization-based user membership.
+- Permission-controlled ticket operations.
+
+### 2. Multi-Tenant Architecture
+- Multiple organizations supported.
+- Organization-level ticket data isolation.
+- Organization-scoped access permissions.
+- Superuser cross-organization access.
+
+### 3. Incident and Ticket Management
+- Create, retrieve, update, and delete tickets through REST APIs.
+- Ticket priority management:
+  - LOW
+  - MEDIUM
+  - HIGH
+  - CRITICAL
+- Ticket status management:
+  - OPEN
+  - IN_PROGRESS
+  - RESOLVED
+  - CLOSED
+- Ticket search and filtering.
+- Ticket assignment and organization-based validation.
+
+### 4. SLA Management
+- Configurable SLA policies for each organization.
+- Priority-based response deadlines.
+- Priority-based resolution deadlines.
+- Automatic deadline generation during ticket creation.
+- First response timestamp tracking.
+- Resolution timestamp tracking.
+- Response SLA status monitoring.
+- Resolution SLA status monitoring.
+
+### 5. Web-Based Interface
+- Login and logout functionality.
+- Ticket listing and search.
+- Status and priority filtering.
+- Ticket creation form.
+- Ticket detail page.
+- Ticket status management.
+
+### 6. API Documentation and Testing
+- Swagger API documentation.
+- Redoc API documentation.
+- OpenAPI schema generation.
+- Automated Django test suite.
+
+---
 
 ## Technology Stack
 
 | Category | Technologies |
 |---|---|
-| Language | Python |
-| Backend | Django |
-| API | Django REST Framework |
+| Programming Language | Python |
+| Backend Framework | Django |
+| REST API | Django REST Framework |
 | Database | PostgreSQL |
 | Authentication | Simple JWT |
-| Filtering | Frontend search and filtering |
-| API Schema | DRF Spectacular |
-| Frontend | Django Templates, HTML, CSS, Bootstrap |
+| API Documentation | DRF Spectacular |
+| Frontend | HTML, CSS, Bootstrap, Django Templates |
+| Testing | Django Test Framework |
 | Deployment | Render |
-| Version Control | Git and GitHub |
+| Version Control | Git, GitHub |
+
+---
 
 ## Project Structure
 
-- `accounts/` — Custom user model, authentication, and user roles.
-- `organizations/` — Organization management and membership.
-- `tickets/` — Ticket models, serializers, permissions, and APIs.
-- `frontend/` — Web interface, forms, and frontend views.
-- `config/` — Django project settings and URL configuration.
+```text
+ResolveX/
+│
+├── accounts/          # Custom user model and authentication
+├── organizations/     # Organization management
+├── tickets/           # Ticket models, serializers, APIs and permissions
+├── sla/               # SLA policies and management APIs
+├── frontend/          # Web interface, forms and views
+├── config/            # Django project configuration
+│
+├── staticfiles/       # Collected static assets
+├── manage.py
+├── requirements.txt
+├── build.sh
+└── README.md
+```
+
+---
 
 ## Local Installation and Setup
 
@@ -77,11 +133,13 @@ python -m pip install -r requirements.txt
 
 ### 4. Configure environment variables
 
-Create a `.env` file in the project root and configure the environment variables required by `config/settings.py`.
+Create a `.env` file in the project root.
 
-Use your own local database credentials and Django secret key.
+Configure the environment variables required by `config/settings.py`, including your Django secret key and local PostgreSQL database settings.
 
-**Important:** Never commit `.env`, database credentials, or production secrets to GitHub.
+Use your own local database credentials.
+
+Never commit `.env`, database URLs, passwords, or production secrets to GitHub.
 
 ### 5. Apply database migrations
 
@@ -101,76 +159,137 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-Open the application:
+Open:
 
-http://127.0.0.1:8000/
+- Application: http://127.0.0.1:8000/
+- Login: http://127.0.0.1:8000/login/
+- Tickets: http://127.0.0.1:8000/tickets/
+- Django Admin: http://127.0.0.1:8000/admin/
 
-Django Admin:
+---
 
-http://127.0.0.1:8000/admin/
+## API Endpoints
 
-## API Testing
+### Authentication
 
-Use Postman to test the REST API endpoints with valid authentication credentials.
-
-| Operation | Method | Endpoint |
+| Method | Endpoint | Description |
 |---|---|---|
-| Obtain JWT tokens | POST | `/api/token/` |
-| Refresh access token | POST | `/api/token/refresh/` |
-| List tickets | GET | `/api/tickets/` |
-| Create ticket | POST | `/api/tickets/` |
-| Retrieve ticket | GET | `/api/tickets/<id>/` |
-| Update ticket | PATCH | `/api/tickets/<id>/` |
-| Delete ticket | DELETE | `/api/tickets/<id>/` |
+| POST | `/api/token/` | Obtain JWT access and refresh tokens |
+| POST | `/api/token/refresh/` | Refresh access token |
 
-Authentication, permissions, and required request fields depend on the API configuration.
+### Ticket Management
 
-## Run Automated Tests
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/tickets/` | List tickets |
+| POST | `/api/tickets/` | Create ticket |
+| GET | `/api/tickets/<id>/` | Retrieve ticket |
+| PUT/PATCH | `/api/tickets/<id>/` | Update ticket |
+| DELETE | `/api/tickets/<id>/` | Delete ticket |
 
-Execute the Django test suite:
+### SLA Management
+
+| Method | Endpoint | Description |
+|---|---|---|
+| GET | `/api/sla/policies/` | List SLA policies |
+| POST | `/api/sla/policies/` | Create SLA policy |
+| GET | `/api/sla/policies/<id>/` | Retrieve SLA policy |
+| PUT/PATCH | `/api/sla/policies/<id>/` | Update SLA policy |
+| DELETE | `/api/sla/policies/<id>/` | Delete SLA policy |
+
+SLA policy management is subject to configured authentication and permissions.
+
+### API Documentation
+
+| Resource | Endpoint |
+|---|---|
+| OpenAPI Schema | `/api/schema/` |
+| Swagger UI | `/api/docs/` |
+| Redoc | `/api/redoc/` |
+
+---
+
+## SLA Workflow
+
+When a ticket is created, ResolveX checks for an active SLA policy matching the ticket's organization and priority.
+
+The system then calculates:
+
+- Response deadline.
+- Resolution deadline.
+
+During ticket processing:
+
+1. A ticket is created with OPEN status.
+2. When moved to IN_PROGRESS, the first response timestamp is recorded.
+3. When moved to RESOLVED, the resolution timestamp is recorded.
+4. Reopening a resolved ticket preserves the previous resolution timestamp until another resolution occurs.
+
+The API also provides response and resolution SLA status information.
+
+---
+
+## Automated Testing
+
+Run the complete test suite:
 
 ```powershell
 python manage.py test
 ```
 
-**Latest verified test result:** 29 tests passed successfully.
+**Latest verified result:**
+
+- 37 tests discovered.
+- 37 tests passed.
+- Django system checks passed.
+- No test failures.
+
+---
 
 ## Security and Access Control
 
-- Organization-level ticket data isolation.
-- Role-based access control for administrators, managers, support agents, and customers.
-- Customers can view and create tickets but cannot update or delete them through the API.
-- Managers can create and update tickets within their organization.
-- Support agents can update tickets assigned to them.
-- Organization administrators can manage tickets within their organization.
-- Superusers have cross-organization access.
-- JWT-based API authentication.
+- Organization-level data isolation.
+- Role-based access permissions.
+- JWT authentication.
+- Organization-scoped ticket access.
+- Assignment validation.
 - Environment-based configuration for sensitive credentials.
-- HTTPS-enabled production deployment.
-- Database credentials and secret keys must remain private.
+- Production HTTPS support through Render.
+
+---
 
 ## Deployment
 
-ResolveX is deployed on Render.
+ResolveX is deployed using Render.
 
 **Live Application:** https://resolvex-web.onrender.com
 
-The production environment uses PostgreSQL and has successfully passed deployment and migration verification.
+The production environment uses PostgreSQL.
+
+---
 
 ## Project Status
 
-**Deployment:** Live
+| Component | Status |
+|---|---|
+| Django Backend | Implemented |
+| REST APIs | Implemented |
+| PostgreSQL Integration | Implemented |
+| JWT Authentication | Implemented |
+| Role-Based Access | Implemented |
+| Multi-Tenant Architecture | Implemented |
+| SLA Management | Implemented |
+| Frontend Interface | Implemented |
+| API Documentation | Configured |
+| Automated Tests | 37 Passed |
+| Deployment | Live |
 
-**Core functionality:** Implemented and tested
-
-**Database:** PostgreSQL
-
-**Automated tests:** 29 passed in the latest verified test run
-
-**Production migration:** Verified
+---
 
 ## Author
 
-Developed by **Riya Chauhan** as a Python and Django REST Framework portfolio project.
+**Riya Chauhan**
+
+Python Developer | Django | Django REST Framework | PostgreSQL
 
 GitHub: https://github.com/theriyachauhan17-del

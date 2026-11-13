@@ -13,3 +13,7 @@ db.sqlite3
 staticfiles/
 media/
 .vscode/
+
+.prod_db_url
+production_snapshot.json
+README_backup.md

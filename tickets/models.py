@@ -56,6 +56,27 @@ class Ticket(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+        # SLA tracking fields
+    response_deadline = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    resolution_deadline = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    first_responded_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    resolved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
     def __str__(self):
         return f"#{self.pk} - {self.title}"
 

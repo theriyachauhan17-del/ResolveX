@@ -1,4 +1,8 @@
+from datetime import timedelta
+from django.utils import timezone
 
+from sla.models import SLAPolicy
+from tickets.serializers import TicketSerializer
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.contrib.auth import get_user_model
@@ -588,3 +592,206 @@ class TicketCreationTest(APITestCase):
 
         ticket.refresh_from_db()
         self.assertIsNone(ticket.assigned_to_id)
+
+
+
+class TicketSLATest(APITestCase):
+
+    def setUp(self):
+        self.organization = Organization.objects.create(
+            name="SLA Test Organization",
+            slug="sla-test-organization",
+        )
+
+        self.user = User.objects.create_user(
+            username="slaagent",
+            password="TestPass123!",
+            organization=self.organization,
+            role=User.Role.AGENT,
+        )
+
+        self.client.force_authenticate(user=self.user)
+
+    def create_policy(self, priority, response_minutes, resolution_minutes):
+        return SLAPolicy.objects.create(
+            organization=self.organization,
+            priority=priority,
+            response_time_minutes=response_minutes,
+            resolution_time_minutes=resolution_minutes,
+            is_active=True,
+        )
+
+    def test_low_priority_ticket_gets_correct_sla_deadlines(self):
+        self.create_policy("LOW", 480, 4320)
+
+        before_creation = timezone.now()
+
+        response = self.client.post(
+            "/api/tickets/",
+            {
+                "organization": self.organization.id,
+                "title": "Low priority SLA test",
+                "description": "Testing LOW priority deadlines",
+                "priority": "LOW",
+                "status": "OPEN",
+            },
+            format="json",
+        )
+
+        after_creation = timezone.now()
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        ticket = Ticket.objects.get(title="Low priority SLA test")
+
+        expected_response = timedelta(minutes=480)
+        expected_resolution = timedelta(minutes=4320)
+
+        self.assertGreaterEqual(
+            ticket.response_deadline,
+            before_creation + expected_response,
+        )
+        self.assertLessEqual(
+            ticket.response_deadline,
+            after_creation + expected_response,
+        )
+
+        self.assertGreaterEqual(
+            ticket.resolution_deadline,
+            before_creation + expected_resolution,
+        )
+        self.assertLessEqual(
+            ticket.resolution_deadline,
+            after_creation + expected_resolution,
+        )
+
+    def test_ticket_without_active_policy_has_no_deadlines(self):
+        response = self.client.post(
+            "/api/tickets/",
+            {
+                "organization": self.organization.id,
+                "title": "No SLA policy test",
+                "description": "Testing missing SLA policy",
+                "priority": "LOW",
+                "status": "OPEN",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+        ticket = Ticket.objects.get(title="No SLA policy test")
+
+        self.assertIsNone(ticket.response_deadline)
+        self.assertIsNone(ticket.resolution_deadline)
+
+    def test_response_sla_completed_on_time(self):
+        deadline = timezone.now() + timedelta(hours=1)
+
+        ticket = Ticket.objects.create(
+            organization=self.organization,
+            title="Response on time",
+            description="Testing response SLA",
+            created_by=self.user,
+            response_deadline=deadline,
+            first_responded_at=timezone.now(),
+        )
+
+        serializer = TicketSerializer(ticket)
+
+        self.assertEqual(
+            serializer.data["response_sla_status"],
+            "COMPLETED_ON_TIME",
+        )
+
+    def test_response_sla_breached(self):
+        ticket = Ticket.objects.create(
+            organization=self.organization,
+            title="Response breached",
+            description="Testing breached response SLA",
+            created_by=self.user,
+            response_deadline=timezone.now() - timedelta(minutes=5),
+        )
+
+        serializer = TicketSerializer(ticket)
+
+        self.assertEqual(
+            serializer.data["response_sla_status"],
+            "BREACHED",
+        )
+
+    def test_resolution_sla_completed_on_time(self):
+        ticket = Ticket.objects.create(
+            organization=self.organization,
+            title="Resolution on time",
+            description="Testing resolution SLA",
+            created_by=self.user,
+            status=Ticket.Status.RESOLVED,
+            resolution_deadline=timezone.now() + timedelta(hours=1),
+            resolved_at=timezone.now(),
+        )
+
+        serializer = TicketSerializer(ticket)
+
+        self.assertEqual(
+            serializer.data["resolution_sla_status"],
+            "COMPLETED_ON_TIME",
+        )
+
+    def test_resolution_sla_completed_late(self):
+        deadline = timezone.now() - timedelta(hours=1)
+
+        ticket = Ticket.objects.create(
+            organization=self.organization,
+            title="Resolution late",
+            description="Testing late resolution",
+            created_by=self.user,
+            status=Ticket.Status.RESOLVED,
+            resolution_deadline=deadline,
+            resolved_at=timezone.now(),
+        )
+
+        serializer = TicketSerializer(ticket)
+
+        self.assertEqual(
+            serializer.data["resolution_sla_status"],
+            "COMPLETED_LATE",
+        )
+
+    def test_reopened_ticket_continues_resolution_tracking(self):
+        ticket = Ticket.objects.create(
+            organization=self.organization,
+            title="Reopened ticket",
+            description="Testing reopened ticket SLA",
+            created_by=self.user,
+            status=Ticket.Status.IN_PROGRESS,
+            resolution_deadline=timezone.now() + timedelta(hours=2),
+            resolved_at=timezone.now() - timedelta(minutes=10),
+        )
+
+        serializer = TicketSerializer(ticket)
+
+        self.assertEqual(
+            serializer.data["resolution_sla_status"],
+            "ON_TRACK",
+        )
+
+    def test_ticket_without_deadline_returns_not_configured(self):
+        ticket = Ticket.objects.create(
+            organization=self.organization,
+            title="No deadline",
+            description="Testing missing deadlines",
+            created_by=self.user,
+        )
+
+        serializer = TicketSerializer(ticket)
+
+        self.assertEqual(
+            serializer.data["response_sla_status"],
+            "NOT_CONFIGURED",
+        )
+
+        self.assertEqual(
+            serializer.data["resolution_sla_status"],
+            "NOT_CONFIGURED",
+        )

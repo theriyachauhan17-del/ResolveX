@@ -1,9 +1,14 @@
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.exceptions import PermissionDenied
 
+from datetime import timedelta
+
+from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets
+from rest_framework.exceptions import PermissionDenied
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.permissions import IsAuthenticated
+
+from sla.models import SLAPolicy
 from .models import Ticket
 from .serializers import TicketSerializer
 from .permissions import TicketRolePermission
@@ -14,11 +19,10 @@ class TicketViewSet(viewsets.ModelViewSet):
     serializer_class = TicketSerializer
     permission_classes = [IsAuthenticated, TicketRolePermission]
 
-    # Filtering, searching, and ordering
     filter_backends = [
-    DjangoFilterBackend,
-    SearchFilter,
-    OrderingFilter,
+        DjangoFilterBackend,
+        SearchFilter,
+        OrderingFilter,
     ]
 
     filterset_fields = ["status", "priority"]
@@ -29,7 +33,6 @@ class TicketViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
-        # Only Django superusers can access all organizations.
         if user.is_superuser:
             return Ticket.objects.select_related(
                 "organization",
@@ -37,7 +40,6 @@ class TicketViewSet(viewsets.ModelViewSet):
                 "assigned_to",
             ).all()
 
-        # All other users can see tickets from their own organization.
         if user.organization_id:
             return Ticket.objects.select_related(
                 "organization",
@@ -45,30 +47,79 @@ class TicketViewSet(viewsets.ModelViewSet):
                 "assigned_to",
             ).filter(organization_id=user.organization_id)
 
-        # Users without an organization see no tickets.
         return Ticket.objects.none()
 
     def perform_create(self, serializer):
         user = self.request.user
+        organization = serializer.validated_data["organization"]
 
-        # Superusers can create tickets for any organization.
-        if user.is_superuser:
+        if not user.is_superuser:
+            if not user.organization_id:
+                raise PermissionDenied(
+                    "You must belong to an organization to create a ticket."
+                )
+
+            if organization.id != user.organization_id:
+                raise PermissionDenied(
+                    "You can create tickets only for your own organization."
+                )
+
+        priority = serializer.validated_data.get(
+            "priority",
+            Ticket.Priority.MEDIUM,
+        )
+
+        sla_policy = SLAPolicy.objects.filter(
+            organization=organization,
+            priority=priority,
+            is_active=True,
+        ).first()
+
+        if sla_policy:
+            now = timezone.now()
+
+            response_deadline = now + timedelta(
+                minutes=sla_policy.response_time_minutes
+            )
+
+            resolution_deadline = now + timedelta(
+                minutes=sla_policy.resolution_time_minutes
+            )
+
+            serializer.save(
+                created_by=user,
+                response_deadline=response_deadline,
+                resolution_deadline=resolution_deadline,
+            )
+        else:
             serializer.save(created_by=user)
-            return
 
-        # Regular users must belong to an organization.
-        if not user.organization_id:
-            raise PermissionDenied(
-                "You must belong to an organization to create a ticket."
-            )
 
-        # Regular users can create tickets only for their organization.
+    def perform_update(self, serializer):
+        ticket = self.get_object()
+
+        old_status = ticket.status
+        new_status = serializer.validated_data.get(
+            "status",
+            old_status,
+        )
+
+        now = timezone.now()
+        update_fields = {}
+
+        # Record the first response only once.
         if (
-            serializer.validated_data["organization"].id
-            != user.organization_id
+            old_status != Ticket.Status.IN_PROGRESS
+            and new_status == Ticket.Status.IN_PROGRESS
+            and ticket.first_responded_at is None
         ):
-            raise PermissionDenied(
-                "You can create tickets only for your own organization."
-            )
+            update_fields["first_responded_at"] = now
 
-        serializer.save(created_by=user)
+        # Record the latest resolution time on every new resolution.
+        if (
+            old_status != Ticket.Status.RESOLVED
+            and new_status == Ticket.Status.RESOLVED
+        ):
+            update_fields["resolved_at"] = now
+
+        serializer.save(**update_fields)

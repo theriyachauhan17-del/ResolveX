@@ -1,14 +1,19 @@
+
+from datetime import timedelta
+
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 
+from sla.models import SLAPolicy
 from tickets.models import Ticket
 from .forms import TicketForm
 
+
 def home(request):
     return render(request, "frontend/home.html")
-
 
 
 @login_required
@@ -25,7 +30,6 @@ def tickets_page(request):
             },
         )
 
-    
     tickets = Ticket.objects.filter(
         organization_id=request.user.organization_id
     ).select_related(
@@ -34,17 +38,14 @@ def tickets_page(request):
         "assigned_to",
     )
 
-    # Search tickets by title.
     search_query = request.GET.get("q", "").strip()
     if search_query:
         tickets = tickets.filter(title__icontains=search_query)
 
-    # Filter tickets by status.
     selected_status = request.GET.get("status", "").strip()
     if selected_status:
         tickets = tickets.filter(status=selected_status)
 
-    # Filter tickets by priority.
     selected_priority = request.GET.get("priority", "").strip()
     if selected_priority:
         tickets = tickets.filter(priority=selected_priority)
@@ -54,8 +55,8 @@ def tickets_page(request):
         "search_query": search_query,
         "selected_status": selected_status,
         "selected_priority": selected_priority,
-        "status_choices": Ticket._meta.get_field("status").choices,
-        "priority_choices": Ticket._meta.get_field("priority").choices,
+        "status_choices": Ticket.Status.choices,
+        "priority_choices": Ticket.Priority.choices,
     }
 
     return render(request, "frontend/tickets.html", context)
@@ -63,7 +64,7 @@ def tickets_page(request):
 
 @login_required
 def ticket_detail(request, ticket_id):
-    if not request.user.organization_id:
+    if not request.user.organization_id and not request.user.is_superuser:
         return render(
             request,
             "frontend/tickets.html",
@@ -76,15 +77,18 @@ def ticket_detail(request, ticket_id):
             status=403,
         )
 
-    ticket = get_object_or_404(
-        Ticket.objects.select_related(
-            "organization",
-            "created_by",
-            "assigned_to",
-        ),
-        pk=ticket_id,
-        organization_id=request.user.organization_id,
+    ticket_queryset = Ticket.objects.select_related(
+        "organization",
+        "created_by",
+        "assigned_to",
     )
+
+    if not request.user.is_superuser:
+        ticket_queryset = ticket_queryset.filter(
+            organization_id=request.user.organization_id
+        )
+
+    ticket = get_object_or_404(ticket_queryset, pk=ticket_id)
 
     return render(
         request,
@@ -97,16 +101,67 @@ def ticket_detail(request, ticket_id):
 
 
 @login_required
+def create_ticket(request):
+    if request.method == "POST":
+        form = TicketForm(request.POST)
+
+        if form.is_valid():
+            if not request.user.organization_id:
+                form.add_error(
+                    None,
+                    "Your account is not assigned to an organization.",
+                )
+            else:
+                ticket = form.save(commit=False)
+                organization = request.user.organization
+
+                sla_policy = SLAPolicy.objects.filter(
+                    organization=organization,
+                    priority=ticket.priority,
+                    is_active=True,
+                ).first()
+
+                ticket.organization = organization
+                ticket.created_by = request.user
+
+                if sla_policy:
+                    now = timezone.now()
+
+                    ticket.response_deadline = now + timedelta(
+                        minutes=sla_policy.response_time_minutes
+                    )
+
+                    ticket.resolution_deadline = now + timedelta(
+                        minutes=sla_policy.resolution_time_minutes
+                    )
+
+                ticket.save()
+
+                messages.success(
+                    request,
+                    "Ticket created successfully.",
+                )
+                return redirect("tickets_page")
+    else:
+        form = TicketForm()
+
+    return render(
+        request,
+        "frontend/create_ticket.html",
+        {"form": form},
+    )
+
+
+@login_required
 def update_ticket_status(request, ticket_id):
     if request.method != "POST":
         return redirect("ticket_detail", ticket_id=ticket_id)
 
     user = request.user
 
-    # Find the ticket only within the user's organization.
-    if user.is_superuser:
-        ticket = get_object_or_404(Ticket, pk=ticket_id)
-    else:
+    ticket_queryset = Ticket.objects.all()
+
+    if not user.is_superuser:
         if not user.organization_id:
             return render(
                 request,
@@ -120,13 +175,12 @@ def update_ticket_status(request, ticket_id):
                 status=403,
             )
 
-        ticket = get_object_or_404(
-            Ticket,
-            pk=ticket_id,
-            organization_id=user.organization_id,
+        ticket_queryset = ticket_queryset.filter(
+            organization_id=user.organization_id
         )
 
-    # Enforce role-based update permissions.
+    ticket = get_object_or_404(ticket_queryset, pk=ticket_id)
+
     allowed = (
         user.is_superuser
         or user.role in ["ADMIN", "MANAGER"]
@@ -140,9 +194,12 @@ def update_ticket_status(request, ticket_id):
         return render(
             request,
             "frontend/ticket_detail.html",
-            {"ticket": ticket, "status_error": (
-                "You do not have permission to update this ticket."
-            )},
+            {
+                "ticket": ticket,
+                "status_error": (
+                    "You do not have permission to update this ticket."
+                ),
+            },
             status=403,
         )
 
@@ -153,40 +210,34 @@ def update_ticket_status(request, ticket_id):
         messages.error(request, "Please select a valid ticket status.")
         return redirect("ticket_detail", ticket_id=ticket.id)
 
-    ticket.status = new_status
-    ticket.save(update_fields=["status", "updated_at"])
+    old_status = ticket.status
+    now = timezone.now()
+    update_fields = []
+
+    if (
+        old_status != Ticket.Status.IN_PROGRESS
+        and new_status == Ticket.Status.IN_PROGRESS
+        and ticket.first_responded_at is None
+    ):
+        ticket.first_responded_at = now
+        update_fields.append("first_responded_at")
+
+    if (
+        old_status != Ticket.Status.RESOLVED
+        and new_status == Ticket.Status.RESOLVED
+    ):
+        ticket.resolved_at = now
+        update_fields.append("resolved_at")
+
+    if old_status != new_status:
+        ticket.status = new_status
+        update_fields.extend(["status", "updated_at"])
+
+    if update_fields:
+        ticket.save(update_fields=update_fields)
 
     messages.success(request, "Ticket status updated successfully.")
     return redirect("ticket_detail", ticket_id=ticket.id)
-
-
-@login_required
-def create_ticket(request):
-    if request.method == "POST":
-        form = TicketForm(request.POST)
-
-        if form.is_valid():
-            ticket = form.save(commit=False)
-
-            # Assign organization and creator from the logged-in user.
-            if not request.user.organization_id:
-                form.add_error(
-                    None,
-                    "Your account is not assigned to an organization.",
-                )
-            else:
-                ticket.organization = request.user.organization
-                ticket.created_by = request.user
-                ticket.save()
-                return redirect("tickets_page")
-    else:
-        form = TicketForm()
-
-    return render(
-        request,
-        "frontend/create_ticket.html",
-        {"form": form},
-    )
 
 
 def login_page(request):
@@ -224,4 +275,3 @@ def logout_page(request):
         return redirect("login")
 
     return redirect("home")
-
